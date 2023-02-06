@@ -98,6 +98,116 @@ document.addEventListener('DOMContentLoaded', (event) => {
     setClock('.timer', deadline);
 
 
+    // modal
+    const modal = document.querySelector('.modal'),
+      modalClose = modal.querySelector('[data-close]'),
+      modalTrigger = document.querySelectorAll('[data-modal]');
+
+
+    function openModal() {
+      modal.classList.add('show');
+      document.body.style.overflow = 'hidden';
+      clearTimeout(modalTimerId);
+      window.removeEventListener('scroll', showModalByScroll);
+    }
+
+    function closeModal() {
+      modal.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    modalTrigger.forEach(item => item.addEventListener('click', openModal));
+    modalClose.addEventListener('click', closeModal);
+
+    modal.addEventListener('click', (event) => {
+
+      if(event.target === modal) {
+        closeModal();
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if(event.code === 'Escape' && modal.classList.contains('show')) {
+        closeModal();
+      }
+    });
+
+    const modalTimerId = setTimeout(openModal, 15000);
+
+    // после 1 показа, удаляем обработчик событий
+    function showModalByScroll() {
+      if(window.pageYOffset + document.documentElement.clientHeight >= document.documentElement.scrollHeight -1) {
+        openModal();
+        window.removeEventListener('scroll', showModalByScroll);
+      }
+    }
+
+    window.addEventListener('scroll', showModalByScroll);
+
+
+    // Используем классы для карточек
+    class MenuCard {
+      constructor(src, alt, title, descr, price, parentSelector) {
+        this.src = src;
+        this.title = title;
+        this.descr = descr;
+        this.price = price;
+        this.parent = document.querySelector(parentSelector);
+        this.transfer = 70;
+        this.changeToRUB();
+      }
+
+      changeToRUB() {
+        this.price *= this.transfer;
+      }
+
+      // создаем версту
+      render() {
+        const element = document.createElement('div');
+        element.innerHTML = `
+        <div class="menu__item">
+          <img src=${this.src} alt=${this.alt}>
+          <h3 class="menu__item-subtitle">${this.title}</h3>
+          <div class="menu__item-descr">${this.descr}</div>
+          <div class="menu__item-divider"></div>
+          <div class="menu__item-price">
+              <div class="menu__item-cost">Цена:</div>
+              <div class="menu__item-total"><span>${this.price}</span> рублей/день</div>
+          </div>
+        </div>
+        `;
+        this.parent.append(element);
+      }
+    }
+
+    new MenuCard(
+      "img/tabs/vegy.jpg",
+      "vegy",
+      'Меню "Фитнес"',
+      'Меню "Фитнес" - это новый подход к приготовлению блюд: больше свежих овощей и фруктов. Продукт активных и здоровых людей. Это абсолютно новый продукт с оптимальной ценой и высоким качеством!',
+      9,
+      '.menu .container',
+    ).render();
+
+    new MenuCard(
+      "img/tabs/elite.jpg",
+      "elite",
+      'Меню “Премиум”',
+      'В меню “Премиум” мы используем не только красивый дизайн упаковки, но и качественное исполнение блюд. Красная рыба, морепродукты, фрукты - ресторанное меню без похода в ресторан!',
+      14,
+      '.menu .container',
+    ).render();
+
+    new MenuCard(
+      "img/tabs/post.jpg",
+      "post",
+      'Меню "Постное"',
+      'Меню “Постное” - это тщательный подбор ингредиентов: полное отсутствие продуктов животного происхождения, молоко из миндаля, овса, кокоса или гречки, правильное количество белков за счет тофу и импортных вегетарианских стейков.',
+      21,
+      '.menu .container',
+    ).render();
+
+
     // slider
     const sliderWrapper = document.querySelector('.offer__slider'),
       sliderImg = sliderWrapper.querySelectorAll('.offer__slide'),
@@ -127,7 +237,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     sliderWrapper.addEventListener('click', (event,) => {
       const target = event.target;
 
-      if(target && (target.classList.contains('offer__slider-prev') || target.classList.contains('prev'))) {
+      if(target && (target.classList.contains('offer__slider-prev') || target.alt == 'prev')) {
         if (counter <= 0) {
           counter = sliderImg.length;
         }
@@ -136,7 +246,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         showSliderContent(counter);
       }
 
-      if(target && (target.classList.contains('offer__slider-next') || target.classList.contains('next'))) {
+      if(target && (target.classList.contains('offer__slider-next') || target.alt == 'next')) {
         if (counter >= sliderImg.length - 1) {
           counter = -1;
         }
