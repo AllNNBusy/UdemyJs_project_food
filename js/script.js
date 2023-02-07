@@ -100,7 +100,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
     // modal
     const modal = document.querySelector('.modal'),
-      modalClose = modal.querySelector('[data-close]'),
       modalTrigger = document.querySelectorAll('[data-modal]');
 
 
@@ -117,11 +116,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
 
     modalTrigger.forEach(item => item.addEventListener('click', openModal));
-    modalClose.addEventListener('click', closeModal);
 
     modal.addEventListener('click', (event) => {
 
-      if(event.target === modal) {
+      if(event.target === modal || event.target.getAttribute('data-close') == '') {
         closeModal();
       }
     });
@@ -147,11 +145,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
     // Используем классы для карточек
     class MenuCard {
-      constructor(src, alt, title, descr, price, parentSelector) {
+      constructor(src, alt, title, descr, price, parentSelector, ...classes) {
         this.src = src;
         this.title = title;
         this.descr = descr;
         this.price = price;
+        this.classes = classes;
         this.parent = document.querySelector(parentSelector);
         this.transfer = 70;
         this.changeToRUB();
@@ -164,8 +163,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
       // создаем версту
       render() {
         const element = document.createElement('div');
+        if (this.classes.length === 0) {
+          this.classes.push('menu__item');
+        }
+
+        this.classes.forEach(className => element.classList.add(className));
         element.innerHTML = `
-        <div class="menu__item">
           <img src=${this.src} alt=${this.alt}>
           <h3 class="menu__item-subtitle">${this.title}</h3>
           <div class="menu__item-descr">${this.descr}</div>
@@ -174,7 +177,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
               <div class="menu__item-cost">Цена:</div>
               <div class="menu__item-total"><span>${this.price}</span> рублей/день</div>
           </div>
-        </div>
         `;
         this.parent.append(element);
       }
@@ -187,6 +189,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
       'Меню "Фитнес" - это новый подход к приготовлению блюд: больше свежих овощей и фруктов. Продукт активных и здоровых людей. Это абсолютно новый продукт с оптимальной ценой и высоким качеством!',
       9,
       '.menu .container',
+      'menu__item',
     ).render();
 
     new MenuCard(
@@ -196,6 +199,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
       'В меню “Премиум” мы используем не только красивый дизайн упаковки, но и качественное исполнение блюд. Красная рыба, морепродукты, фрукты - ресторанное меню без похода в ресторан!',
       14,
       '.menu .container',
+      'menu__item',
     ).render();
 
     new MenuCard(
@@ -205,7 +209,92 @@ document.addEventListener('DOMContentLoaded', (event) => {
       'Меню “Постное” - это тщательный подбор ингредиентов: полное отсутствие продуктов животного происхождения, молоко из миндаля, овса, кокоса или гречки, правильное количество белков за счет тофу и импортных вегетарианских стейков.',
       21,
       '.menu .container',
+      'menu__item',
     ).render();
+
+
+    // формы: работа с Ajax, POST.
+    // 1) Старый метод XMLHttpRequest
+    // Forms
+    const forms = document.querySelectorAll('form');
+
+    forms.forEach(item => postData(item));
+
+    const message = {
+      loading: 'img/form/spinner.svg',
+      success: 'Спасибо! Скоро мы с Вами свяжемся',
+      failure: 'Упс, что-то пошло не так',
+    };
+
+    function postData(form) {
+      // 'submit' срабатывает каждый раз когда 'пытаемся' отправить форму
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        // устанавливаем спинер в верстку
+        let statusMessage = document.createElement('img');
+        statusMessage.src = message.loading;
+        statusMessage.alt = 'loading';
+        statusMessage.style.cssText = `
+          display: block;
+          margin: 0 auto;
+        `;
+        form.insertAdjacentElement('afterend', statusMessage);
+
+        // POST запрос, сохраняем данные на нашем server.php
+        const request = new XMLHttpRequest();
+        request.open('POST', 'server.php');
+
+        // formData когда мы используем связку XMLHttpRequest + formData: заголовок устанавливать не нужно! запомнить
+        const formData = new FormData(form);
+        // request.send(formData);
+
+        // отправка JSON данных на сервер
+        let object = {};
+        formData.forEach((value, key) => object[key] = value);
+
+        const json = JSON.stringify(object);
+        request.send(json);
+
+        // создаем обработчик события load - загрузка заверщена
+        request.addEventListener('load', () => {
+          if (request.status === 200) {
+            showThanksModal(message.success);
+            statusMessage.remove();
+            form.reset();
+          } else {
+            showThanksModal(message.failure);
+            statusMessage.remove();
+            form.reset();
+          }
+        });
+      });
+    }
+
+    // показываем модельное окно, с результатом отработки формы
+    function showThanksModal(message) {
+      const prevModalDialog = document.querySelector('.modal__dialog');
+      prevModalDialog.classList.add('hide');
+      openModal();
+
+      // создаем новое окно
+      const thanksModal = document.createElement('div');
+      thanksModal.classList.add('modal__dialog');
+      thanksModal.innerHTML = `
+        <div class="modal__content">
+          <div data-close class="modal__close">×</div>
+          <div class="modal__title">${message}</div>
+        </div>
+      `;
+      // помещаем новое окно на страницу
+      document.querySelector('.modal').append(thanksModal);
+
+      // через 4 секунды возвращаем старое окно
+      setTimeout(() => {
+        thanksModal.remove();
+        prevModalDialog.classList.remove('hide');
+        closeModal();
+      }, 4000);
+    }
 
 
     // slider
